@@ -173,9 +173,12 @@ int main(int argc, char **argv)
  */
 void eval(char *cmdline)
 {
-	if(!strncmp(cmdline,"quit",4)){
-		printf("QUITTING!!!!!");
-		exit(0);
+	char *argv[MAXARGS]; //list of arguments
+	parseline(cmdline, argv);
+	
+	// check if the command is one of the builtins
+	if(!builtin_cmd(argv)) {
+		//do something
 	}
 }
 
@@ -245,6 +248,19 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv)
 {
+	if(!strncmp(argv[0],"quit",4)){
+                printf("QUITTING!!!!!");
+                exit(0);
+        }
+	if(!strncmp(argv[0], "jobs",4)) {
+		printf("you want jobs bro\n");
+		//list all the jobs
+		//held �að sé bara svona en er ekki viss �vi
+		//við erum ekki með nein jobs í gangi
+
+		//listjobs(jobs);
+	}
+
     return 0;     /* not a builtin command */
 }
 
