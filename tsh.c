@@ -176,7 +176,7 @@ void eval(char *cmdline)
 	char *argv[MAXARGS];	//list of arguments
 	pid_t pid;
 	int bg_or_fg;			// either background or foreground
-	parseline(cmdline, argv);
+	bg_or_fg = parseline(cmdline, argv);
 	
 	// check if the command is one of the builtins
 	if(!builtin_cmd(argv)) {
