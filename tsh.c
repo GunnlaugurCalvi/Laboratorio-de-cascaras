@@ -172,8 +172,7 @@ int main(int argc, char **argv)
  * when we type ctrl-c (ctrl-z) at the keyboard.
  */
 void eval(char *cmdline)
-{
-	char *argv[MAXARGS];	//list of arguments
+{	char *argv[MAXARGS];	//list of arguments
 	pid_t pid;
 	int bg_or_fg;			// either background or foreground
 	bg_or_fg = parseline(cmdline, argv);
