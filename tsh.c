@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 
 /*
  * eval - Evaluate the command line that the user has just typed in
- *
+ 
  * If the user has requested a built-in command (quit, jobs, bg or fg)
  * then execute it immediately. Otherwise, fork a child process and
  * run the job in the context of the child. If the job is running in
@@ -173,12 +173,30 @@ int main(int argc, char **argv)
  */
 void eval(char *cmdline)
 {
-	char *argv[MAXARGS]; //list of arguments
+	char *argv[MAXARGS];	//list of arguments
+    pid_t pid;
+    int bg_or_fg;			// either background or foreground
 	parseline(cmdline, argv);
 	
 	// check if the command is one of the builtins
 	if(!builtin_cmd(argv)) {
 		//do something
+	//	if((pid = fork()) < 0){
+	//		unix_error("Fork Error!!");
+	//	}
+	//	else if(pid == 0){
+			//print child value
+	//	}
+			//print parent value
+	//	else{
+		//	int errStatus; 
+
+		//	if(!bg_or_fg){
+				//add jobs to bg or fg				
+		//	}		
+				//check for signal errors
+				//block and unblock signals
+		//}
 	}
 }
 
@@ -249,9 +267,9 @@ int parseline(const char *cmdline, char **argv)
 int builtin_cmd(char **argv)
 {
 	if(!strncmp(argv[0],"quit",4)){
-                printf("QUITTING!!!!!");
-                exit(0);
-        }
+		printf("QUITTING!!!!!\n");
+		exit(0);
+    }
 	if(!strncmp(argv[0], "jobs",4)) {
 		printf("you want jobs bro\n");
 		//list all the jobs
@@ -260,7 +278,19 @@ int builtin_cmd(char **argv)
 
 		//listjobs(jobs);
 	}
+	if(!strncmp(argv[0],"bg",2)){
+		printf("casss me ousside(bg)\n");
+		//Executes the builtin bg
+		//and runs it on the background
+		//do_bgfg(argv);
+	}
+	if(!strncmp(argv[0],"fg",2)){
+		printf("casss me innside(fg)\n");
+		//Executes the builtin fg
+        //and runs it on the foreground
+        //do_bgfg(argv);
 
+	}
     return 0;     /* not a builtin command */
 }
 
