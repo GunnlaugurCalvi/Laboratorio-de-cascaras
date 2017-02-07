@@ -4,7 +4,7 @@
  * You __MUST__ add your user information here below
  *
  * === User information ===
- * Group:  Cinco de Mayo 
+ * Group:  Dos Hombres Quatro Cojones 
  * User 1: Gunnlaugur15 
  * SSN: 1707952889
  * User 2: Hjalmarh15
