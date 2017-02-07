@@ -173,16 +173,22 @@ int main(int argc, char **argv)
  */
 void eval(char *cmdline)
 {	char *argv[MAXARGS];	//list of arguments
-	pid_t pid;
 	int bg_or_fg;			// either background or foreground
+	pid_t pid;
 	bg_or_fg = parseline(cmdline, argv);
 	
+	if(argv[0] == NULL){
+		return; //Ignore empty lines
+	}
 	// check if the command is one of the builtins
 	if(!builtin_cmd(argv)) {
 		//do something
-	//	if((pid = fork()) < 0){
-	//		unix_error("Fork Error!!");
-	//	}
+		if((pid = fork()) == 0){
+			if(execve(argv[0], argv, environ) < 0){
+				printf("%s: Command nicht found.\n", argv[0]);
+					
+			}
+		}
 	//	else if(pid == 0){
 			//print child value
 	//	}
@@ -197,6 +203,7 @@ void eval(char *cmdline)
 				//block and unblock signals
 		//}
 	}
+	return;
 }
 
 /*
@@ -332,7 +339,9 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig)
 {
-    return;
+	printf("Caught sigint_handler"); //use write 
+	exit(0);
+	return;
 }
 
 /*
@@ -342,7 +351,9 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
-    return;
+	printf("Caught sigstp_handler");//use write
+    exit(0);
+	return;
 }
 
 /*********************
