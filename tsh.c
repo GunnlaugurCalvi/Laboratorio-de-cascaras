@@ -4,7 +4,7 @@
  * You __MUST__ add your user information here below
  *
  * === User information ===
- * Group:  NONE
+ * Group:  Cinco de Mayo 
  * User 1: Gunnlaugur15 
  * SSN: 1707952889
  * User 2: Hjalmarh15
@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+//#include "csapp.h"
 
 /* Misc manifest constants */
 #define MAXLINE    1024   /* max line size */
@@ -71,6 +72,11 @@ void waitfg(pid_t pid);
 void sigchld_handler(int sig);
 void sigtstp_handler(int sig);
 void sigint_handler(int sig);
+/*safe I/O package to print in handlers
+ssize_t sio_putl(long v);
+ssize_t sio_puts(char s[]);
+void sio_error(char s[]);
+*/
 
 /* Here are helper routines that we've provided for you */
 int parseline(const char *cmdline, char **argv);
@@ -172,31 +178,48 @@ int main(int argc, char **argv)
  * when we type ctrl-c (ctrl-z) at the keyboard.
  */
 void eval(char *cmdline)
-{	char *argv[MAXARGS];	//list of arguments
+{	
+	char *argv[MAXARGS];	//list of arguments
 	int bg_or_fg;			// either background or foreground
 	pid_t pid;
+	sigset_t mask, prev_mask; 
 	bg_or_fg = parseline(cmdline, argv);
-	
+	int errstatus;
+
 	if(argv[0] == NULL){
 		return; //Ignore empty lines
 	}
 	// check if the command is one of the builtins
 	if(!builtin_cmd(argv)) {
 		//do something
-		if((pid = fork()) < 0){
-			unix_error("Forking error\n");
-		}
+	
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGCHLD);
+        sigprocmask(SIG_BLOCK, &mask, &prev_mask);  //Add the signals in set to block
+                                                    //Block SIGINT and save previous blocked set
+        if((pid = fork()) < 0){
+            unix_error("Forking error\n");
+        }
 		else if(pid == 0){	
 	 		//printf("Child PID is %ld\n", (long) getpid());
+			setpgid(0,0);
+
+			sigprocmask(SIG_UNBLOCK, &mask, NULL);	//Remove the signals in set from blocked 
 			if(execve(argv[0], argv, environ) <  0){
 				printf("%s: Command nicht found.\n", argv[0]);
 				exit(0);
 			}
  
 		}
-		else if(!bg_or_fg){
-			int errStatus;
-				//do somehting					
+		if(bg_or_fg){	//background
+			addjob(jobs, pid, BG, cmdline);
+			//do somehting							
+		}
+		else{			//foreground
+			addjob(jobs, pid, FG, cmdline);
+
+			waitfg(pid);	
+
 		}
 	}
 }
@@ -277,20 +300,22 @@ int builtin_cmd(char **argv)
 		//held �að sé bara svona en er ekki viss �vi
 		//við erum ekki með nein jobs í gangi
 
-		//listjobs(jobs);
+		listjobs(jobs);
+		return 1;
 	}
 	else if(!strncmp(argv[0],"bg",2)){
 		printf("casss me ousside(bg)\n");
 		//Executes the builtin bg
 		//and runs it on the background
-		//do_bgfg(argv);
+		do_bgfg(argv);
+		return 1;
 	}
 	else if(!strncmp(argv[0],"fg",2)){
 		printf("casss me innside(fg)\n");
 		//Executes the builtin fg
         //and runs it on the foreground
-        //do_bgfg(argv);
-
+		do_bgfg(argv);
+		return 1;
 	}
 	else if (!strncmp(argv[0],"&",1)){
         return 1;
@@ -303,6 +328,7 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
+	
     return;
 }
 
@@ -337,8 +363,8 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig)
 {
-	printf("Caught sigint_handler"); //use write 
-	exit(0);
+	printf("Caught SIGINT!\n");
+	_exit(0);
 	return;
 }
 
@@ -580,6 +606,29 @@ handler_t *Signal(int signum, handler_t *handler)
     }
     return (old_action.sa_handler);
 }
+/*
+ * The Safe I/O functions 
+ *
+ *
+ssize_t sio_puts(char s[]) //Put string
+{
+	return write(STDOUT_FILENO, s, sio_strlen(s));
+}
+
+ssize_t sio_putl(long v) // Put long 
+{
+	char s[128];
+
+	sio_ltoa(v, s, 10); //Based on K&R itoa()
+	return sio_puts(s);
+}
+void sio_error(char s[]) //Put error message and exit
+{
+	sio_puts(s);
+	_exit(1);
+}*/
+
+
 
 /*
  * sigquit_handler - The driver program can gracefully terminate the
