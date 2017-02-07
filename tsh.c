@@ -183,27 +183,22 @@ void eval(char *cmdline)
 	// check if the command is one of the builtins
 	if(!builtin_cmd(argv)) {
 		//do something
-		if((pid = fork()) == 0){
-			if(execve(argv[0], argv, environ) < 0){
-				printf("%s: Command nicht found.\n", argv[0]);
-					
-			}
+		if((pid = fork()) < 0){
+			unix_error("Forking error\n");
 		}
-	//	else if(pid == 0){
-			//print child value
-	//	}
-			//print parent value
-	//	else{
-		//	int errStatus; 
-
-		//	if(!bg_or_fg){
-				//add jobs to bg or fg				
-		//	}		
-				//check for signal errors
-				//block and unblock signals
-		//}
+		else if(pid == 0){	
+	 		//printf("Child PID is %ld\n", (long) getpid());
+			if(execve(argv[0], argv, environ) <  0){
+				printf("%s: Command nicht found.\n", argv[0]);
+				exit(0);
+			}
+ 
+		}
+		else if(!bg_or_fg){
+			int errStatus;
+				//do somehting					
+		}
 	}
-	return;
 }
 
 /*
@@ -276,7 +271,7 @@ int builtin_cmd(char **argv)
 		printf("QUITTING!!!!!\n");
 		exit(0);
 	}
-	if(!strncmp(argv[0], "jobs",4)) {
+	else if(!strncmp(argv[0], "jobs",4)) {
 		printf("you want jobs bro\n");
 		//list all the jobs
 		//held ÃaÃ° sÃ© bara svona en er ekki viss Ãvi
@@ -284,19 +279,22 @@ int builtin_cmd(char **argv)
 
 		//listjobs(jobs);
 	}
-	if(!strncmp(argv[0],"bg",2)){
+	else if(!strncmp(argv[0],"bg",2)){
 		printf("casss me ousside(bg)\n");
 		//Executes the builtin bg
 		//and runs it on the background
 		//do_bgfg(argv);
 	}
-	if(!strncmp(argv[0],"fg",2)){
+	else if(!strncmp(argv[0],"fg",2)){
 		printf("casss me innside(fg)\n");
 		//Executes the builtin fg
         //and runs it on the foreground
         //do_bgfg(argv);
 
 	}
+	else if (!strncmp(argv[0],"&",1)){
+        return 1;
+    }
     return 0;     /* not a builtin command */
 }
 
