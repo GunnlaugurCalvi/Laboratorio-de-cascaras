@@ -23,11 +23,11 @@
  *   **************************/
 /* $begin errorfuns */
 /* $begin unixerror */
-void unix_error(char *msg) /* Unix-style error */
+/*void unix_error(char *msg)  Unix-style error 
 {
     fprintf(stderr, "%s: %s\n", msg, strerror(errno));
     exit(0);
-}
+}*/
 /* $end unixerror */
 
 void posix_error(int code, char *msg) /* Posix-style error */
@@ -42,11 +42,12 @@ void gai_error(int code, char *msg) /* Getaddrinfo-style error */
     exit(0);
 }
 
-void app_error(char *msg) /* Application error */
+/*void app_error(char *msg)  Application error 
 {
     fprintf(stderr, "%s\n", msg);
     exit(0);
-}
+}*/
+
 /* $end errorfuns */
 
 void dns_error(char *msg) /* Obsolete gethostbyname error */
@@ -139,18 +140,18 @@ pid_t Getpgrp(void) {
  *   ***********************************/
 
 /* $begin sigaction */
-handler_t *Signal(int signum, handler_t *handler) 
+/*handler_t *Signal(int signum, handler_t *handler) 
 {
     struct sigaction action, old_action;
 
     action.sa_handler = handler;  
-    sigemptyset(&action.sa_mask); /* Block sigs of type being handled */
-    action.sa_flags = SA_RESTART; /* Restart syscalls if possible */
+    sigemptyset(&action.sa_mask);  Block sigs of type being handled 
+    action.sa_flags = SA_RESTART;  Restart syscalls if possible 
 
     if (sigaction(signum, &action, &old_action) < 0)
 	unix_error("Signal error");
     return (old_action.sa_handler);
-}
+}*/
 /* $end sigaction */
 
 void Sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
@@ -481,7 +482,7 @@ FILE *Fdopen(int fd, const char *type)
     return fp;
 }
 
-char *Fgets(char *ptr, int n, FILE *stream) 
+/*char *Fgets(char *ptr, int n, FILE *stream) 
 {
     char *rptr;
 
@@ -489,7 +490,7 @@ char *Fgets(char *ptr, int n, FILE *stream)
 	app_error("Fgets error");
 
     return rptr;
-}
+}*/
 
 FILE *Fopen(const char *filename, const char *mode) 
 {

@@ -14,6 +14,8 @@ ifeq "$(USER_2)" ""
 	USER_2 = "NONE"
 endif
 
+tsh: tsh.c csapp.o
+	$(CC) $(CFLAGS) -lpthread -o tsh tsh.c csapp.o
 VERSION = 1
 HANDINDIR = /labs/sty17/.handin/shlab
 DRIVER = ./sdriver.pl

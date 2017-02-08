@@ -61,11 +61,11 @@ extern char **environ; /* Defined by libc */
 #define LISTENQ  1024  /* Second argument to listen() */
 
 /* Our own error-handling functions */
-void unix_error(char *msg);
+//void unix_error(char *msg);
 void posix_error(int code, char *msg);
 void dns_error(char *msg);
 void gai_error(int code, char *msg);
-void app_error(char *msg);
+//void app_error(char *msg);
 
 /* Process control wrappers */
 pid_t Fork(void);
@@ -81,7 +81,7 @@ pid_t Getpgrp();
 
 /* Signal wrappers */
 typedef void handler_t(int);
-handler_t *Signal(int signum, handler_t *handler);
+//handler_t *Signal(int signum, handler_t *handler);
 void Sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
 void Sigemptyset(sigset_t *set);
 void Sigfillset(sigset_t *set);

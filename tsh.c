@@ -328,7 +328,7 @@ void do_bgfg(char **argv)
 		return;
 	}
 	int nJid = atoi(argv[1] + 1);	
-	
+	//pid_t nPid = jid2pid(nJid);	
 	if(*argv[1] == '%'){
 		if(nJid <= 0){ 	//Error check whether next char after '%' 
 								//is a digit or char
@@ -346,6 +346,9 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+	while(pid == fgpid(jobs)){ //a busy loop that waits for the job to terminate
+		sleep(1);
+	}
     return;
 }
 
@@ -372,14 +375,14 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig)
 {
-	/*int olderrno = errno;
+	int olderrno = errno;
 	if ((waitpid(-1, NULL, 0)) < 0){
 		sio_error("waitpid error");
 	}
 	Sio_puts("Handler reaped child\n" );
 	sleep(1);
 	errno = olderrno;
-	*/
+	
 	return;
 }
 
@@ -390,7 +393,7 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
-	printf("Caught sigtstp handler\n");
+	Sio_puts("Caught sigtstp handler\n");
     _exit(0);
 }
 
@@ -607,6 +610,7 @@ void app_error(char *msg)
 /*
  * Signal - wrapper for the sigaction function
  */
+
 handler_t *Signal(int signum, handler_t *handler)
 {
     struct sigaction action, old_action;
