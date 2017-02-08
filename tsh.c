@@ -216,7 +216,8 @@ void eval(char *cmdline)
 			}
 			else{			//foreground
 				addjob(jobs, pid, FG, cmdline);
-				waitfg(pid);	
+				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+                waitfg(pid);	
 		
 		
 			}
@@ -380,10 +381,9 @@ void do_bgfg(char **argv)
 void waitfg(pid_t pid)
 {
 	while(pid == fgpid(jobs)){ //a busy loop that waits for the job to terminate
-		printf("fgpid %d\n", pid);
-		Sleep(1);
+		sleep(1);
 	}
-    return;
+	return;
 }
 
 /*****************
@@ -399,15 +399,17 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig)
 {
-	//ur bokinni
-	pid_t pid;
-	while ((pid =waitpid(-1, NULL, 0)) > 0) { //reap a zombie child
-		deletejob(jobs, pid); //delete the chld from the job list
-	    if(errno != ECHILD) {
-			unix_error("waitpid error");
-		}
-	}
-	return;
+    //ur bokinni
+    pid_t pid;
+    while ((pid =waitpid(-1, NULL, 0)) > 0) { //reap a zombie child
+        deletejob(jobs, pid); //delete the chld from the job list
+
+        if(errno != ECHILD) {
+            unix_error("waitpid error");
+        }
+
+    }
+    return;
 }
 
 /*
@@ -418,15 +420,15 @@ void sigchld_handler(int sig)
  *    to the foreground job.
  */
 void sigint_handler(int sig)
-{
-	pid_t pid = fgpid(jobs);
-	int jid = pid2jid(pid);
-	printf("pid: %d jid: %d", pid, jid);
-	if(pid != 0) {
-		kill(-pid, SIGINT);                           
-	}
-	exit(0);
-	return;	
+{   
+    pid_t pid = fgpid(jobs);
+    int jid = pid2jid(pid);
+    printf("pid: %d jid: %d", pid, jid);
+    if(pid != 0) {
+        kill(-pid, SIGINT);                           
+    }
+    exit(0);
+    return;
 }
 
 /*
