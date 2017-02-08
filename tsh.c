@@ -178,7 +178,7 @@ void eval(char *cmdline)
 	char *argv[MAXARGS];	//list of arguments
 	int bg_or_fg;			// either background or foreground
 	pid_t pid;
-	sigset_t mask, prev_mask; 
+	sigset_t mask;			//To block signals
 	bg_or_fg = parseline(cmdline, argv);
 	//int errstatus;
 
@@ -187,11 +187,10 @@ void eval(char *cmdline)
 	}
 	// check if the command is one of the builtins
 	if(!builtin_cmd(argv)) {
-		//do something
 	
         sigemptyset(&mask);
         sigaddset(&mask, SIGCHLD);
-        sigprocmask(SIG_BLOCK, &mask, &prev_mask);  //Add the signals in set to block
+        sigprocmask(SIG_BLOCK, &mask, NULL);  //Add the signals in set to block
                                                     //Block SIGINT and save previous blocked set
        	if((pid = fork()) < 0){
 			unix_error("forking error");
@@ -212,14 +211,13 @@ void eval(char *cmdline)
 		
 			if(bg_or_fg){	//background
 				addjob(jobs, pid, BG, cmdline);				
+				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
 			}
 			else{			//foreground
 				addjob(jobs, pid, FG, cmdline);
-				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-                waitfg(pid);	
-		
-		
+				sigprocmask(SIG_UNBLOCK, &mask, NULL);
+				waitfg(pid);			
 			}
 		}	
 	}
