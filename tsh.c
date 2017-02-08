@@ -11,6 +11,8 @@
  * SSN: 1510933379
  * === End User Information ===
  */
+
+#include "csapp.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,7 +22,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
-//#include "csapp.h"
 
 /* Misc manifest constants */
 #define MAXLINE    1024   /* max line size */
@@ -72,11 +73,6 @@ void waitfg(pid_t pid);
 void sigchld_handler(int sig);
 void sigtstp_handler(int sig);
 void sigint_handler(int sig);
-/*safe I/O package to print in handlers
-ssize_t sio_putl(long v);
-ssize_t sio_puts(char s[]);
-void sio_error(char s[]);
-*/
 
 /* Here are helper routines that we've provided for you */
 int parseline(const char *cmdline, char **argv);
@@ -184,7 +180,7 @@ void eval(char *cmdline)
 	pid_t pid;
 	sigset_t mask, prev_mask; 
 	bg_or_fg = parseline(cmdline, argv);
-	int errstatus;
+	//int errstatus;
 
 	if(argv[0] == NULL){
 		return; //Ignore empty lines
@@ -216,7 +212,6 @@ void eval(char *cmdline)
 			//do somehting							
 		}
 		else{			//foreground
-			addjob(jobs, pid, FG, cmdline);
 
 			waitfg(pid);	
 
@@ -317,9 +312,9 @@ int builtin_cmd(char **argv)
 		do_bgfg(argv);
 		return 1;
 	}
-	else if (!strncmp(argv[0],"&",1)){
+	/*else if (!strncmp(argv[0],"&",1)){
         return 1;
-    }
+    }*/
     return 0;     /* not a builtin command */
 }
 
@@ -328,6 +323,20 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
+	if(!argv[1]){ //Error check wheter it follows a pid og jib argument
+		printf("%s: NONO FOREXAMPLE bg %%jobid \n", argv[0]);
+		return;
+	}
+	int nJid = atoi(argv[1] + 1);	
+	
+	if(*argv[1] == '%'){
+		if(nJid <= 0){ 	//Error check whether next char after '%' 
+								//is a digit or char
+			printf("%s: NONO pid and jid are digits\n", argv[0]);
+		}
+
+		//print out [jid] and (pid) plus command
+	}
 	
     return;
 }
@@ -363,8 +372,14 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig)
 {
-	printf("Caught SIGINT!\n");
-	_exit(0);
+	/*int olderrno = errno;
+	if ((waitpid(-1, NULL, 0)) < 0){
+		sio_error("waitpid error");
+	}
+	Sio_puts("Handler reaped child\n" );
+	sleep(1);
+	errno = olderrno;
+	*/
 	return;
 }
 
@@ -375,9 +390,8 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
-	printf("Caught sigstp_handler");//use write
-    exit(0);
-	return;
+	printf("Caught sigtstp handler\n");
+    _exit(0);
 }
 
 /*********************
@@ -606,29 +620,27 @@ handler_t *Signal(int signum, handler_t *handler)
     }
     return (old_action.sa_handler);
 }
+
+
 /*
- * The Safe I/O functions 
- *
- *
+
 ssize_t sio_puts(char s[]) //Put string
 {
-	return write(STDOUT_FILENO, s, sio_strlen(s));
-}
+	return write(STDOUT_FILENO, s, sio_strlen(s)); //line:csapp:siostrlen
+} 
 
-ssize_t sio_putl(long v) // Put long 
+ssize_t sio_putl(long v)  Put long 
 {
-	char s[128];
-
-	sio_ltoa(v, s, 10); //Based on K&R itoa()
-	return sio_puts(s);
+    char s[128];
+    
+    sio_ltoa(v, s, 10); // Based on K&R itoa()   //line:csapp:sioltoa
+    return sio_puts(s);
 }
-void sio_error(char s[]) //Put error message and exit
+void sio_error(char s[]) // Put error message and exit 
 {
-	sio_puts(s);
-	_exit(1);
+    sio_puts(s);
+    _exit(1);                                      //line:csapp:sioexit
 }*/
-
-
 
 /*
  * sigquit_handler - The driver program can gracefully terminate the
