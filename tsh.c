@@ -207,12 +207,12 @@ void eval(char *cmdline)
 				exit(0);
 			}
  
-		}else{	
+		}
+		else{	
 		
 			if(bg_or_fg){	//background
 				addjob(jobs, pid, BG, cmdline);				
-	            printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-
+				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
 			}
 			else{			//foreground
 				addjob(jobs, pid, FG, cmdline);
@@ -328,24 +328,50 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
+	struct job_t *nJob;
 	if(!argv[1]){ //Error check wheter it follows a pid og jib argument
 		printf("%s: NONO FOREXAMPLE bg %%jobid \n", argv[0]);
 		return;
 	}
 	int nJid = atoi(argv[1] + 1);	
-	pid_t pid = nJid;
-	if(*argv[1] == '%'){
-		if(nJid <= 0){ 	//Error check whether next char after '%' 
-								//is a digit or char
-			printf("%s: NONO pid and jid are digits\n", argv[0]);
-		}
-		
-		//print out [jid] and (pid) plus command`
+	if(*argv[1] == '%' && nJid <= 0){
+		//Error check if we input correct form of Jid 
+
+		printf("%s: NONO pid and jid are digits\n", argv[0]);
+		return;	
 	}
-	
-	
-	
-    return;
+	pid_t pid = atoi(argv[1]);
+	if(isdigit(*argv[1]) && pid  >= 0){
+		//Error check if we input correct form of Pid
+		printf("(%d): No such process\n", pid);  
+		return;  
+	}
+	else{
+		//Error check if you put some dumb thing
+		printf("%s: You know better than this ILLEGAL!\n", argv[0]);
+		return;
+	} 
+
+	if(kill(-(nJob->pid),SIGCONT) < 0){
+		if(errno != ESRCH){
+			unix_error("could not kill");
+		}
+	}
+
+	if(!strncmp(argv[0],"fg",2)){
+		nJob->state = FG;
+		kill(-nJob->pid, SIGCONT);
+		waitfg(nJob->pid);
+
+	}
+	else if (!strncmp(argv[0],"bg", 2)){
+		printf("[%d] (%d) %s", nJob->jid, nJob->pid, nJob->cmdline);
+		nJob->state = BG;
+		kill(-nJob->pid, SIGCONT);
+	}
+	else{
+		printf("Either bg or fg error: %s\n", argv[0]);
+	}
 }
 
 /*
@@ -353,10 +379,10 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-/*	while(pid == fgpid(jobs)){ //a busy loop that waits for the job to terminate
+	while(pid == fgpid(jobs)){ //a busy loop that waits for the job to terminate
 		printf("fgpid %d\n", pid);
-		sleep(1);
-	}*/
+		Sleep(1);
+	}
     return;
 }
 
@@ -373,26 +399,34 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig)
 {
-    return;
+	//ur bokinni
+	pid_t pid;
+	while ((pid =waitpid(-1, NULL, 0)) > 0) { //reap a zombie child
+		deletejob(jobs, pid); //delete the chld from the job list
+	    if(errno != ECHILD) {
+			unix_error("waitpid error");
+		}
+	}
+	return;
 }
 
 /*
+ * sigint_handler - The kernel sends a SIGINT to the shell whenver the
+ * sigint_handler - The kernel sends a SIGINT to the shell whenver the
  * sigint_handler - The kernel sends a SIGINT to the shell whenver the
  *    user types ctrl-c at the keyboard.  Catch it and send it along
  *    to the foreground job.
  */
 void sigint_handler(int sig)
 {
-	pid_t pid;
-	while((pid = waitpid(-1,NULL,0)) > 0){
-		Sio_puts("Handler reaped child ");	
+	pid_t pid = fgpid(jobs);
+	int jid = pid2jid(pid);
+	printf("pid: %d jid: %d", pid, jid);
+	if(pid != 0) {
+		kill(-pid, SIGINT);                           
 	}
-	if(errno != ECHILD){
-		unix_error("waitpid error");
-	}
-	Sleep(2);
-	
-	return;
+	exit(0);
+	return;	
 }
 
 /*
@@ -403,7 +437,7 @@ void sigint_handler(int sig)
 void sigtstp_handler(int sig)
 {
 	Sio_puts("Caught sigtstp handler\n");
-    _exit(0);
+	_exit(0);
 }
 
 /*********************
@@ -541,14 +575,13 @@ int pid2jid(pid_t pid)
     int i;
 
     if (pid < 1) {
-        return 0;
-    }
-    for (i = 0; i < MAXJOBS; i++) {
-        if (jobs[i].pid == pid) {
-            return jobs[i].jid;
-        }
-    }
-    return 0;
+    	for (i = 0; i < MAXJOBS; i++) {
+        	if (jobs[i].pid == pid) {
+            	return jobs[i].jid;
+        	}
+    	}
+	}
+	return 0;
 }
 
 /* listjobs - Print the job list */
