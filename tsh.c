@@ -401,11 +401,11 @@ void sigchld_handler(int sig)
     pid_t pid;
     while ((pid =waitpid(-1, NULL, 0)) > 0) { //reap a zombie child
         deletejob(jobs, pid); //delete the chld from the job list
-
+        /*
         if(errno != ECHILD) {
             unix_error("waitpid error");
         }
-
+        */
     }
     return;
 }
@@ -419,13 +419,14 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig)
 {   
+    //get ID's of job to kill and to print out 
     pid_t pid = fgpid(jobs);
     int jid = pid2jid(pid);
-    printf("pid: %d jid: %d", pid, jid);
     if(pid != 0) {
-        kill(-pid, SIGINT);                           
+        kill(-pid, SIGINT); 
+        deletejob(jobs, pid);        
+        printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, sig);
     }
-    exit(0);
     return;
 }
 
@@ -436,9 +437,9 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
-	Sio_puts("Caught sigtstp handler\n");
-	_exit(0);
+    return;
 }
+
 
 /*********************
  * End signal handlers
