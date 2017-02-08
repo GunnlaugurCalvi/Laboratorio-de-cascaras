@@ -193,12 +193,13 @@ void eval(char *cmdline)
         sigaddset(&mask, SIGCHLD);
         sigprocmask(SIG_BLOCK, &mask, &prev_mask);  //Add the signals in set to block
                                                     //Block SIGINT and save previous blocked set
-        if((pid = fork()) < 0){
-            unix_error("Forking error\n");
-        }
+       	if((pid = fork()) < 0){
+			unix_error("forking error");
+		} 
 		else if(pid == 0){	
 	 		//printf("Child PID is %ld\n", (long) getpid());
-			setpgid(0,0);
+			setpgid(0,0);	//creates a new process group ID, and adds it to
+							//new that new group
 
 			sigprocmask(SIG_UNBLOCK, &mask, NULL);	//Remove the signals in set from blocked 
 			if(execve(argv[0], argv, environ) <  0){
@@ -206,16 +207,20 @@ void eval(char *cmdline)
 				exit(0);
 			}
  
-		}
-		if(bg_or_fg){	//background
-			addjob(jobs, pid, BG, cmdline);
-			//do somehting							
-		}
-		else{			//foreground
+		}else{	
+		
+			if(bg_or_fg){	//background
+				addjob(jobs, pid, BG, cmdline);				
+	            printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
 
-			waitfg(pid);	
-
-		}
+			}
+			else{			//foreground
+				addjob(jobs, pid, FG, cmdline);
+				waitfg(pid);	
+		
+		
+			}
+		}	
 	}
 }
 
@@ -328,15 +333,17 @@ void do_bgfg(char **argv)
 		return;
 	}
 	int nJid = atoi(argv[1] + 1);	
-	//pid_t nPid = jid2pid(nJid);	
+	pid_t pid = nJid;
 	if(*argv[1] == '%'){
 		if(nJid <= 0){ 	//Error check whether next char after '%' 
 								//is a digit or char
 			printf("%s: NONO pid and jid are digits\n", argv[0]);
 		}
-
-		//print out [jid] and (pid) plus command
+		
+		//print out [jid] and (pid) plus command`
 	}
+	
+	
 	
     return;
 }
@@ -346,9 +353,10 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-	while(pid == fgpid(jobs)){ //a busy loop that waits for the job to terminate
+/*	while(pid == fgpid(jobs)){ //a busy loop that waits for the job to terminate
+		printf("fgpid %d\n", pid);
 		sleep(1);
-	}
+	}*/
     return;
 }
 
@@ -375,13 +383,14 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig)
 {
-	int olderrno = errno;
-	if ((waitpid(-1, NULL, 0)) < 0){
-		sio_error("waitpid error");
+	pid_t pid;
+	while((pid = waitpid(-1,NULL,0)) > 0){
+		Sio_puts("Handler reaped child ");	
 	}
-	Sio_puts("Handler reaped child\n" );
-	sleep(1);
-	errno = olderrno;
+	if(errno != ECHILD){
+		unix_error("waitpid error");
+	}
+	Sleep(2);
 	
 	return;
 }
