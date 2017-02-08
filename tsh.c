@@ -376,10 +376,10 @@ void sigchld_handler(int sig)
     //ur bokinni
     pid_t pid;
     while ((pid =waitpid(-1, NULL, 0)) > 0) { //reap a zombie child
-        deletejob(pid); //delete the chld from the job list
+        deletejob(jobs, pid); //delete the chld from the job list
 
         if(errno != ECHILD) {
-            unix_erro("waitpid erro");
+            unix_error("waitpid error");
         }
 
     }
@@ -397,7 +397,7 @@ void sigint_handler(int sig)
     int jid = pid2jid(pid);
     printf("pid: %d jid: %d", pid, jid);
     if(pid != 0) {
-        kill(-pid, SIGINT);                           }
+        kill(-pid, SIGINT);                           
     }
     exit(0);
     return;
