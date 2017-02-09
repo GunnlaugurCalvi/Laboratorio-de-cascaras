@@ -411,7 +411,6 @@ void sigchld_handler(int sig)
 {
     int status;
     pid_t pid;
-    
     //the main gist of this function is taken from 8.4
 
     //WNOHANG stops the waitpid from being blocked
@@ -421,6 +420,11 @@ void sigchld_handler(int sig)
             //child terminated normally
             //just delete the job from the job list
             deletejob(jobs, pid);
+
+            //for debuggin purposes
+      
+            //Sio_puts("child terminated with exit status: ");
+            //Sio_puts(WIFEXITSTATUS(status));
         }
 
         //Returns true if the child process terminated because of a signal
