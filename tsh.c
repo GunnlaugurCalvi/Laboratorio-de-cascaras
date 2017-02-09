@@ -325,8 +325,8 @@ void do_bgfg(char **argv)
 {
     struct job_t *theJob;
     //check if JID og PID is given
-    if(argv[1] == NULL || !isdigit(argv[1][0])) {
-        printf("fg command requires PID or %%jobid argument\n");
+    if(argv[1] == NULL) {
+        printf("%s command requires PID or %%jobid argument\n", argv[0]);
         return;
     }
 
@@ -343,6 +343,10 @@ void do_bgfg(char **argv)
     else {      //pid
         int pid = atoi(argv[1]);
         theJob = getjobpid(jobs, pid);
+        if(!isdigit(argv[1][0])) {
+            printf("%s command requires PID or %%jobid argument\n", argv[0]);
+            return;
+        }
         if(theJob == NULL) {
             printf("(%s): no such process\n", argv[1]);
             return;
@@ -351,7 +355,9 @@ void do_bgfg(char **argv)
 
     if(!strncmp(argv[0], "fg", 2)) {
         theJob->state = FG;
-        kill(-theJob->pid, SIGCONT);
+        if(kill(-theJob->pid, SIGCONT) < 0) {
+            unix_error("kill error");
+        }
         waitfg(theJob->pid);
     }
     else if(!strncmp(argv[0], "bg", 2)){
