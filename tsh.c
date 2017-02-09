@@ -190,10 +190,21 @@ void eval(char *cmdline)
 	// check if the command is one of the builtins
 	if(!builtin_cmd(argv)) {
 	
-        sigemptyset(&mask);
-        sigaddset(&mask, SIGCHLD);
-        sigprocmask(SIG_BLOCK, &mask, NULL);  //Add the signals in set to block
-                                                    //Block SIGINT and save previous blocked set
+        if(sigemptyset(&mask) < 0) {
+            unix_error("sigemptyset error");
+        }
+        
+        //add signal to the set
+        if(sigaddset(&mask, SIGCHLD) < 0) {
+            unix_error("sigaddset error");
+        }
+
+
+        //Block SIGINT and save previous blocked set
+        if(sigprocmask(SIG_BLOCK, &mask, NULL) < 0) { 
+            unix_error("sigprocmask error");
+        }
+  
        	if((pid = fork()) < 0){
 			unix_error("forking error");
 		} 
@@ -202,9 +213,11 @@ void eval(char *cmdline)
 			setpgid(0,0);	//creates a new process group ID, and adds it to
 							//new that new group
 
-			sigprocmask(SIG_UNBLOCK, &mask, NULL);	//Remove the signals in set from blocked 
-			if(execve(argv[0], argv, environ) <  0){
-				printf("%s: Command not found.\n", argv[0]);
+			if(sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {	//Remove the signals in set from blocked
+                unix_error("sigprocmask error");
+            }
+            if(execve(argv[0], argv, environ) <  0){
+			    printf("%s: Command not found.\n", argv[0]);
 				exit(0);
 			}
  
@@ -214,11 +227,15 @@ void eval(char *cmdline)
 			if(bg_or_fg){	//background
 				addjob(jobs, pid, BG, cmdline);				
 				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-			    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+			    if(sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+                    unix_error("sigprocmask error");
+                }
             }
 			else{			//foreground
 				addjob(jobs, pid, FG, cmdline);
-				sigprocmask(SIG_UNBLOCK, &mask, NULL);
+				if(sigprocmask(SIG_UNBLOCK, &mask, NULL) <0 ) {
+                    unix_error("sigprocmask error");
+                }
 				waitfg(pid);			
 			}
 		}	
@@ -312,9 +329,8 @@ int builtin_cmd(char **argv)
 		do_bgfg(argv);
 		return 1;
 	}
-	/*else if (!strncmp(argv[0],"&",1)){
-        return 1;
-    }*/
+
+
     return 0;     /* not a builtin command */
 }
 
@@ -331,19 +347,19 @@ void do_bgfg(char **argv)
     }
 
     //check wether user gives %jid or pid
-    if(argv[1][0] == '%') {     //jid
-        int jid = atoi(&argv[1][1]);
+    if(*argv[1] == '%') {     //jid
+        int jid = atoi(argv[1]+1);
         theJob = getjobjid(jobs, jid);
         if(theJob == NULL) {
-            printf("%s: no such job\n", &argv[1][0]);
+            printf("%s: no such job\n", argv[1]);
             return;
         }    
     }
 
     else {      //pid
-        int pid = atoi(argv[1]);
+        pid_t pid = atoi(argv[1]);
         theJob = getjobpid(jobs, pid);
-        if(!isdigit(argv[1][0])) {
+        if(!isdigit(*argv[1])) {
             printf("%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
@@ -363,7 +379,9 @@ void do_bgfg(char **argv)
     else if(!strncmp(argv[0], "bg", 2)){
         printf("[%d] (%d) %s", theJob->jid, theJob->pid, theJob->cmdline);
         theJob->state = BG;
-        kill(-theJob->pid, SIGCONT);
+        if(kill(-theJob->pid, SIGCONT) < 0) {
+            unix_error("kill error");
+        }
     }
 }
 
@@ -391,23 +409,34 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig)
 {
-	int status;  
-	pid_t pid;  
+    int status;
+    pid_t pid;
+
+    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
+        if(WIFEXITED(status)) { //returns true if child terminated normally
+            deletejob(jobs, pid);
+        }
+        if(WIFSIGNALED(status)) {
+            deletejob(jobs,pid);
+        }
+
+        if(WIFSTOPPED(status)) {
+            getjobpid(jobs, pid)->state = ST;
+        }
+    }
     
-	// Waiting for/ handling all of the child processes according to their status
-	while ((pid = waitpid(fgpid(jobs), &status, WNOHANG|WUNTRACED)) > 0) {  
-		if (WIFSTOPPED(status)){  
-	 		sigtstp_handler(20);  
-	 	}  
-	 	else if (WIFSIGNALED(status)){  
-	 		sigint_handler(-2);  
-	 	}  
-	 	else if (WIFEXITED(status)){  
-	 		deletejob(jobs, pid);  
-	 	}  
-	 }  
-	return;
+
+    if(errno != ECHILD) {
+        unix_error("waitpid error");
+    }
+    return;
+    
+
+   
 }
+
+
+
 
 /*
  * sigint_handler - The kernel sends a SIGINT to the shell whenver the
@@ -422,7 +451,9 @@ void sigint_handler(int sig)
     pid_t pid = fgpid(jobs);
     int jid = pid2jid(pid);
     if(pid != 0) {
-        kill(-pid, SIGINT); 
+        if(kill(-pid, SIGINT) < 0) {
+            unix_error("kill error");
+        }
         deletejob(jobs, pid);        
         printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, sig);
     }
@@ -439,7 +470,9 @@ void sigtstp_handler(int sig)
     pid_t pid = fgpid(jobs);
     int jid = pid2jid(pid);
     if(pid != 0) {
-        kill(-pid,sig );
+        if(kill(-pid,sig) < 0) {
+            unix_error("kill error");
+        }
         getjobpid(jobs, pid)->state = ST;
 		printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, sig);
     }
