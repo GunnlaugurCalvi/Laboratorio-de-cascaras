@@ -391,17 +391,22 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig)
 {
-    //ur bokinni
-    pid_t pid;
-    while ((pid =waitpid(-1, NULL, 0)) > 0) { //reap a zombie child
-        deletejob(jobs, pid); //delete the chld from the job list
-        /*
-        if(errno != ECHILD) {
-            unix_error("waitpid error");
-        }
-        */
-    }
-    return;
+	int status;  
+	pid_t pid;  
+    
+	// Waiting for/ handling all of the child processes according to their status
+	while ((pid = waitpid(fgpid(jobs), &status, WNOHANG|WUNTRACED)) > 0) {  
+		if (WIFSTOPPED(status)){  
+	 		sigtstp_handler(20);  
+	 	}  
+	 	else if (WIFSIGNALED(status)){  
+	 		sigint_handler(-2);  
+	 	}  
+	 	else if (WIFEXITED(status)){  
+	 		deletejob(jobs, pid);  
+	 	}  
+	 }  
+	return;
 }
 
 /*
@@ -435,8 +440,8 @@ void sigtstp_handler(int sig)
     int jid = pid2jid(pid);
     if(pid != 0) {
         kill(-pid,sig );
-        deletejob(jobs, pid);
-        printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, sig);
+        getjobpid(jobs, pid)->state = ST;
+		printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, sig);
     }
     return;
 }
