@@ -204,7 +204,7 @@ void eval(char *cmdline)
 
 			sigprocmask(SIG_UNBLOCK, &mask, NULL);	//Remove the signals in set from blocked 
 			if(execve(argv[0], argv, environ) <  0){
-				printf("%s: Command nicht found.\n", argv[0]);
+				printf("%s: Command not found.\n", argv[0]);
 				exit(0);
 			}
  
