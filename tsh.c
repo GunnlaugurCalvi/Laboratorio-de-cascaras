@@ -292,27 +292,21 @@ int parseline(const char *cmdline, char **argv)
 int builtin_cmd(char **argv)
 {
 	if(!strncmp(argv[0],"quit",4)){
-		printf("QUITTING!!!!!\n");
 		exit(0);
 	}
 	else if(!strncmp(argv[0], "jobs",4)) {
-		printf("you want jobs bro\n");
 		//list all the jobs
-		//held �að sé bara svona en er ekki viss �vi
-		//við erum ekki með nein jobs í gangi
 
 		listjobs(jobs);
 		return 1;
 	}
 	else if(!strncmp(argv[0],"bg",2)){
-		printf("casss me ousside(bg)\n");
 		//Executes the builtin bg
 		//and runs it on the background
 		do_bgfg(argv);
 		return 1;
 	}
 	else if(!strncmp(argv[0],"fg",2)){
-		printf("casss me innside(fg)\n");
 		//Executes the builtin fg
         //and runs it on the foreground
 		do_bgfg(argv);
@@ -329,9 +323,25 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
-    int jid = atoi(&argv[1][1]);
-    struct job_t *theJob = getjobjid(jobs, jid);
-    
+    struct job_t *theJob;
+    //check if JID og PID is given
+    if(argv[1] == NULL) {
+        printf("fg command requires PID or %%jobid argument\n");
+        return;
+    }
+
+
+
+    //check if user gives jid or pid
+    if(argv[1][0] == '%') {
+        int jid = atoi(&argv[1][1]);
+        theJob = getjobjid(jobs, jid);
+    }
+    else {
+        int pid = atoi(argv[1]);
+        theJob = getjobpid(jobs, pid);
+    }
+
     //check if the given job exists
     if(theJob == NULL) {
         printf("no such job bro");
