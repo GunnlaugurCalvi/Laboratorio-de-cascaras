@@ -213,9 +213,9 @@ void eval(char *cmdline)
 		
 			if(bg_or_fg){	//background
 				addjob(jobs, pid, BG, cmdline);				
-				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-			}
+			    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            }
 			else{			//foreground
 				addjob(jobs, pid, FG, cmdline);
 				sigprocmask(SIG_UNBLOCK, &mask, NULL);
@@ -344,7 +344,7 @@ void do_bgfg(char **argv)
         int pid = atoi(argv[1]);
         theJob = getjobpid(jobs, pid);
         if(!isdigit(argv[1][0])) {
-            printf("%s command requires PID or %%jobid argument\n", argv[0]);
+            printf("%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
         if(theJob == NULL) {
@@ -582,12 +582,14 @@ int pid2jid(pid_t pid)
     int i;
 
     if (pid < 1) {
-    	for (i = 0; i < MAXJOBS; i++) {
-        	if (jobs[i].pid == pid) {
-            	return jobs[i].jid;
-        	}
-    	}
-	}
+        return 0;
+    }
+    for (i = 0; i < MAXJOBS; i++) {
+        if (jobs[i].pid == pid) {
+           	return jobs[i].jid;
+        }
+    }
+	
 	return 0;
 }
 
