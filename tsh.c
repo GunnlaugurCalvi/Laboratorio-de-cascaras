@@ -325,26 +325,28 @@ void do_bgfg(char **argv)
 {
     struct job_t *theJob;
     //check if JID og PID is given
-    if(argv[1] == NULL) {
+    if(argv[1] == NULL || !isdigit(argv[1][0])) {
         printf("fg command requires PID or %%jobid argument\n");
         return;
     }
 
-
-
-    //check if user gives jid or pid
-    if(argv[1][0] == '%') {
+    //check wether user gives %jid or pid
+    if(argv[1][0] == '%') {     //jid
         int jid = atoi(&argv[1][1]);
         theJob = getjobjid(jobs, jid);
-    }
-    else {
-        int pid = atoi(argv[1]);
-        theJob = getjobpid(jobs, pid);
+        if(theJob == NULL) {
+            printf("%s: no such job\n", &argv[1][0]);
+            return;
+        }    
     }
 
-    //check if the given job exists
-    if(theJob == NULL) {
-        printf("no such job bro");
+    else {      //pid
+        int pid = atoi(argv[1]);
+        theJob = getjobpid(jobs, pid);
+        if(theJob == NULL) {
+            printf("(%s): no such process\n", argv[1]);
+            return;
+        }
     }
 
     if(!strncmp(argv[0], "fg", 2)) {
