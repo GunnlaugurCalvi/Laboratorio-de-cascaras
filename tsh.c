@@ -341,7 +341,7 @@ void do_bgfg(char **argv)
 {
     struct job_t *theJob;
     //check if JID og PID is given
-    if(argv[1] == NULL) {
+    if(!argv[1] ) {
         printf("%s command requires PID or %%jobid argument\n", argv[0]);
         return;
     }
@@ -350,8 +350,8 @@ void do_bgfg(char **argv)
     if(*argv[1] == '%') {     //jid
         int jid = atoi(argv[1]+1);
         theJob = getjobjid(jobs, jid);
-        if(theJob == NULL) {
-            printf("%s: no such job\n", argv[1]);
+        if(!theJob) {
+            printf("%s: No such job\n", argv[1]);
             return;
         }    
     }
@@ -363,8 +363,8 @@ void do_bgfg(char **argv)
             printf("%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
-        if(theJob == NULL) {
-            printf("(%s): no such process\n", argv[1]);
+        if(!theJob) {
+            printf("(%s): No such process\n", argv[1]);
             return;
         }
     }
@@ -422,7 +422,7 @@ void sigchld_handler(int sig)
             deletejob(jobs, pid);
 
             //for debuggin purposes
-      
+     
             //Sio_puts("child terminated with exit status: ");
             //Sio_puts(WIFEXITSTATUS(status));
         }
@@ -433,24 +433,24 @@ void sigchld_handler(int sig)
             //child has been terminated so just delete the job
             deletejob(jobs,pid);
 
-            //print out what happened
-            printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, WTERMSIG(status));
         }
 
         //returns true if the child that caused the return is currently stopped
         else if(WIFSTOPPED(status)) {
             //change the state of the Job that caused the return
             getjobpid(jobs, pid)->state = ST;
-
-            //print out what happened
-            printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), pid, WSTOPSIG(status));
         }
         else {
             unix_error("waitpid error");
         }
     }
-
-   
+    
+    //given in the book, did not work for us
+    /*
+    if(errno != ECHILD) {
+        unix_error("waitpid error");
+    }
+    */   
     return;
     
 
