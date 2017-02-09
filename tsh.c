@@ -179,7 +179,9 @@ void eval(char *cmdline)
 	int bg_or_fg;			// either background or foreground
 	pid_t pid;
 	sigset_t mask;			//To block signals
-	bg_or_fg = parseline(cmdline, argv);
+    char buf[MAXLINE];
+    strcpy(buf, cmdline);
+	bg_or_fg = parseline(buf, argv);
 	//int errstatus;
 
 	if(argv[0] == NULL){
@@ -327,50 +329,24 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
-	struct job_t *nJob;
-	if(!argv[1]){ //Error check wheter it follows a pid og jib argument
-		printf("%s: NONO FOREXAMPLE bg %%jobid \n", argv[0]);
-		return;
-	}
-	int nJid = atoi(argv[1] + 1);	
-	if(*argv[1] == '%' && nJid <= 0){
-		//Error check if we input correct form of Jid 
+    int jid = atoi(&argv[1][1]);
+    struct job_t *theJob = getjobjid(jobs, jid);
+    
+    //check if the given job exists
+    if(theJob == NULL) {
+        printf("no such job bro");
+    }
 
-		printf("%s: NONO pid and jid are digits\n", argv[0]);
-		return;	
-	}
-	pid_t pid = atoi(argv[1]);
-	if(isdigit(*argv[1]) && pid  >= 0){
-		//Error check if we input correct form of Pid
-		printf("(%d): No such process\n", pid);  
-		return;  
-	}
-	else{
-		//Error check if you put some dumb thing
-		printf("%s: You know better than this ILLEGAL!\n", argv[0]);
-		return;
-	} 
-
-	if(kill(-(nJob->pid),SIGCONT) < 0){
-		if(errno != ESRCH){
-			unix_error("could not kill");
-		}
-	}
-
-	if(!strncmp(argv[0],"fg",2)){
-		nJob->state = FG;
-		kill(-nJob->pid, SIGCONT);
-		waitfg(nJob->pid);
-
-	}
-	else if (!strncmp(argv[0],"bg", 2)){
-		printf("[%d] (%d) %s", nJob->jid, nJob->pid, nJob->cmdline);
-		nJob->state = BG;
-		kill(-nJob->pid, SIGCONT);
-	}
-	else{
-		printf("Either bg or fg error: %s\n", argv[0]);
-	}
+    if(!strncmp(argv[0], "fg", 2)) {
+        theJob->state = FG;
+        kill(-theJob->pid, SIGCONT);
+        waitfg(theJob->pid);
+    }
+    else if(!strncmp(argv[0], "bg", 2)){
+        printf("[%d] (%d) %s", theJob->jid, theJob->pid, theJob->cmdline);
+        theJob->state = BG;
+        kill(-theJob->pid, SIGCONT);
+    }
 }
 
 /*
@@ -437,6 +413,13 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
+    pid_t pid = fgpid(jobs);
+    int jid = pid2jid(pid);
+    if(pid != 0) {
+        kill(-pid,sig );
+        deletejob(jobs, pid);
+        printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, sig);
+    }
     return;
 }
 
