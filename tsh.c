@@ -440,8 +440,9 @@ void sigchld_handler(int sig)
         //that wasnt caugh 
         else if(WIFSIGNALED(status)) {
             //child has been terminated so just delete the job
+            printf("Job [%d] (%d) terminated by signal 2\n",pid2jid(pid), pid);
             deletejob(jobs,pid);
-			if(verbose){
+            if(verbose){
 				Sio_puts("child terminated with  status: ");
                 Sio_error(WTERMSIG(status));
 			}
@@ -452,7 +453,7 @@ void sigchld_handler(int sig)
         else if(WIFSTOPPED(status)) {
             //change the state of the Job that caused the return
             getjobpid(jobs, pid)->state = ST;
-
+            printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), pid, WSTOPSIG(status));
         	if(verbose){
 				Sio_puts("child stopped with exit status: ");
                 Sio_error(WSTOPSIG(status));
@@ -492,15 +493,6 @@ void sigint_handler(int sig)
 		if(kill(-theJob->pid, SIGINT) < 0) {
 			unix_error("kill error");
 		}
-		Sio_puts("Job [");				//SAFE I/O FUNC 
-		Sio_putl(theJob->jid);
-		Sio_puts("] (");
-		Sio_putl(theJob->pid);
-		Sio_puts(") ");
-		Sio_puts(" terminated by signal ");
-		Sio_putl(sig);
-		Sio_puts("\n");
-		deletejob(jobs, theJob->pid);  //Delete job from job list with that specified pid  
     }
     return;
 }
@@ -519,16 +511,7 @@ void sigtstp_handler(int sig)
 		if(kill(-theJob->pid, SIGTSTP) < 0) {
 			unix_error("kill error");
 		}
-		theJob->state = ST;			//put our job state action to stop
-		Sio_puts("Job [");
-		Sio_putl(theJob->jid);
-		Sio_puts("] (");
-		Sio_putl(theJob->pid);
-		Sio_puts(") ");
-		Sio_puts(" stopped by signal ");
-		Sio_putl(sig);
-		Sio_puts("\n");
-	}
+    }
     return;
 }
 
